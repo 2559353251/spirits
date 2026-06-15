@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spirits · 灵境卜卦</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'SimSun', 'STSong', 'Noto Serif SC', 'KaiTi', '楷体', serif;
+            background: #0a0806;
+            color: #d4c8a8;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        #particles {
+            position: fixed; inset: 0; pointer-events: none; z-index: 0;
+        }
+
+        /* ===== 主布局：左右两栏 ===== */
+        .app {
+            position: relative; z-index: 1;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* 左栏 · 操作区 */
+        .left-panel {
+            width: 46%;
+            min-width: 380px;
+            display: flex; flex-direction: column; align-items: center;
+            padding: 3rem 2.5rem 2rem;
+            border-right: 1px solid rgba(200,160,80,0.1);
+            background: rgba(0,0,0,0.15);
+            gap: 0.6rem;
+        }
+
+        /* 右栏 · 卦象区 */
+        .right-panel {
+            flex: 1;
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center;
+            padding: 2rem 3rem;
+            gap: 1.2rem;
+        }
+
+        /* 标题 */
+        .title-area { text-align: center; margin-bottom: 0.3rem; }
+        .title-area .icon {
+            font-size: 3.2rem;
+            filter: drop-shadow(0 0 25px rgba(200,160,80,0.5));
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%,100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .title-area h1 {
+            font-size: 2.2rem; font-weight: normal; letter-spacing: 0.3em;
+            color: #c8a04e;
+            text-shadow: 0 0 40px rgba(200,160,80,0.4), 0 2px 4px rgba(0,0,0,0.8);
+        }
+        .title-area .sub {
+            font-size: 0.72rem; color: #6b5e48; letter-spacing: 0.2em; margin-top: 0.1rem;
+        }
+
+        .divider {
+            width: 120px; height: 1px;
+            background: linear-gradient(90deg, transparent, #c8a04e44, #c8a04e88, #c8a04e44, transparent);
+            margin: 0.5rem 0 0.8rem;
+        }
+
+        /* 铜钱 */
+        .coins-area {
+            position: relative; width: 100%; max-width: 340px;
+            height: 180px; margin: 0.3rem auto;
+            perspective: 600px;
+        }
+        .coin {
+            width: 64px; height: 64px; border-radius: 50%;
+            position: absolute;
+            background: radial-gradient(circle at 42% 35%, #e2b94b 0%, #c89030 35%, #8b5e14 70%, #6b4010 100%);
+            box-shadow:
+                0 0 0 3px #9b6918,
+                0 0 0 5px #6b4010,
+                0 0 0 8px #9b6918,
+                0 0 0 10px #4a2808,
+                0 6px 20px rgba(0,0,0,0.6),
+                inset 0 1px 3px rgba(255,220,140,0.4);
+            display: flex; align-items: center; justify-content: center;
+            animation: coinIdle 2s ease-in-out infinite;
+            transform-style: preserve-3d;
+        }
+        /* 初始默认位置（居中排列） */
+        #coin1 { left: 30px;  top: 58px; animation-delay: 0s; }
+        #coin2 { left: 138px; top: 58px; animation-delay: 0.3s; }
+        #coin3 { left: 246px; top: 58px; animation-delay: 0.6s; }
+        /* 方孔 */
+        .coin::before {
+            content: '';
+            position: absolute;
+            width: 16px; height: 16px;
+            background: #0a0806;
+            transform: rotate(45deg);
+            box-shadow:
+                inset 0 0 4px rgba(0,0,0,0.8),
+                0 0 0 2px #4a2808,
+                0 0 0 3px #8b5e14;
+        }
+        /* 字：正面 */
+        .coin::after {
+            content: '開';
+            position: absolute;
+            font-size: 9px; font-weight: bold;
+            color: #5a3808;
+            text-shadow: 0 1px 0 rgba(255,200,100,0.3);
+            top: 8px;
+            letter-spacing: 0;
+            font-family: 'SimSun','KaiTi','楷体',serif;
+        }
+        @keyframes coinIdle {
+            0%,100% { transform: rotateX(15deg) translateY(0); }
+            30% { transform: rotateX(15deg) translateY(-6px); }
+        }
+        /* 动画中的铜钱暂停呼吸动画 */
+        .coin.animating {
+            animation: none;
+        }
+
+        /* ===== 龟壳 ===== */
+        .turtle-shell {
+            position: absolute;
+            width: 104px; height: 74px;
+            left: 50%; top: 50%;
+            margin-left: -52px; margin-top: -37px;
+            background:
+                radial-gradient(ellipse at 50% 28%, #d4b048 0%, #a07828 22%, #785018 50%, #4a300c 80%, #2a1808 100%);
+            border-radius: 48% 48% 40% 40% / 50% 50% 35% 35%;
+            z-index: 10;
+            box-shadow:
+                0 0 0 3px #5a3a10,
+                0 0 0 5px #3a2008,
+                0 0 0 7px #6b4a18,
+                0 8px 28px rgba(0,0,0,0.7),
+                inset 0 3px 10px rgba(220,180,90,0.15),
+                inset 0 -4px 12px rgba(0,0,0,0.5);
+            transition: opacity 0.35s ease;
+            pointer-events: none;
+        }
+        /* 龟甲纹路 — 六边形网格 */
+        .turtle-shell .shell-inner {
+            position: absolute;
+            inset: 5px 7px 10px 7px;
+            border-radius: inherit;
+            background:
+                repeating-linear-gradient(28deg,
+                    transparent, transparent 10px,
+                    rgba(0,0,0,0.18) 10px, rgba(0,0,0,0.18) 11px),
+                repeating-linear-gradient(-28deg,
+                    transparent, transparent 10px,
+                    rgba(0,0,0,0.18) 10px, rgba(0,0,0,0.18) 11px),
+                repeating-linear-gradient(90deg,
+                    transparent, transparent 11px,
+                    rgba(0,0,0,0.13) 11px, rgba(0,0,0,0.13) 12px);
+            opacity: 0.7;
+            mask-image: radial-gradient(ellipse at 50% 30%, black 55%, transparent 90%);
+            -webkit-mask-image: radial-gradient(ellipse at 50% 30%, black 55%, transparent 90%);
+        }
+        /* 壳口 - 底部深色开口 */
+        .turtle-shell::before {
+            content: '';
+            position: absolute;
+            bottom: 2px; left: 22px; right: 22px;
+            height: 14px;
+            background: radial-gradient(ellipse at 50% 0%, #1a0e04 0%, #0a0602 100%);
+            border-radius: 0 0 30% 30%;
+            z-index: 2;
+        }
+        /* 壳顶光泽 */
+        .turtle-shell::after {
+            content: '';
+            position: absolute;
+            top: 6px; left: 18px; right: 18px;
+            height: 18px;
+            background: radial-gradient(ellipse at 50% 50%, rgba(255,220,130,0.25) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        /* 摇晃动画 */
+        .turtle-shell.shaking {
+            animation: shellShake 0.85s ease-in-out infinite;
+        }
+        @keyframes shellShake {
+            0%   { transform: translate(0, 0) rotate(0deg); }
+            8%   { transform: translate(-9px, -5px) rotate(-6deg); }
+            16%  { transform: translate(11px, 4px) rotate(7deg); }
+            24%  { transform: translate(-13px, -7px) rotate(-9deg); }
+            32%  { transform: translate(15px, 5px) rotate(8deg); }
+            40%  { transform: translate(-11px, -8px) rotate(-5deg); }
+            48%  { transform: translate(9px, 6px) rotate(6deg); }
+            56%  { transform: translate(-15px, -4px) rotate(-7deg); }
+            64%  { transform: translate(13px, 7px) rotate(9deg); }
+            72%  { transform: translate(-7px, -7px) rotate(-4deg); }
+            80%  { transform: translate(11px, 3px) rotate(5deg); }
+            88%  { transform: translate(-9px, -5px) rotate(-6deg); }
+            96%  { transform: translate(4px, 3px) rotate(2deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+
+        /* 壳开启/消散 */
+        .turtle-shell.opening {
+            animation: shellOpen 0.45s ease-in forwards;
+            pointer-events: none;
+        }
+        @keyframes shellOpen {
+            0%   { opacity: 1; transform: translate(0, 0) scale(1); }
+            50%  { opacity: 0.7; transform: translate(0, -10px) scale(1.03); }
+            100% { opacity: 0; transform: translate(0, -35px) scale(0.75); }
+        }
+
+        /* 正面（阳） */
+        .coin.result-head {
+            background: radial-gradient(circle at 42% 35%, #f5d060 0%, #d4a030 35%, #9b6918 70%, #7a5010 100%);
+            box-shadow:
+                0 0 0 3px #b08020,
+                0 0 0 5px #7a5010,
+                0 0 0 8px #b08020,
+                0 0 0 10px #5a3808,
+                0 6px 20px rgba(0,0,0,0.6),
+                0 0 30px rgba(200,150,50,0.25),
+                inset 0 1px 3px rgba(255,230,150,0.5);
+        }
+        .coin.result-head::after { content: '開'; color: #5a3808; }
+
+        /* 反面（阴） */
+        .coin.result-tail {
+            background: radial-gradient(circle at 42% 35%, #c8a848 0%, #a07828 35%, #785818 70%, #5a3810 100%);
+            box-shadow:
+                0 0 0 3px #8b6918,
+                0 0 0 5px #5a3810,
+                0 0 0 8px #8b6918,
+                0 0 0 10px #3a2008,
+                0 6px 20px rgba(0,0,0,0.6),
+                inset 0 1px 2px rgba(200,170,100,0.3);
+        }
+        .coin.result-tail::after { content: '通'; color: #4a3008; }
+
+        .toss-count {
+            font-size: 0.75rem; color: #6b5e48; letter-spacing: 0.1em;
+        }
+        .toss-count span { color: #c8a04e; font-size: 1rem; }
+
+        /* 按钮 */
+        .action-area {
+            display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+            margin: 0.5rem 0;
+        }
+        .btn {
+            padding: 0.7rem 2.5rem; border: 1px solid #c8a04e55;
+            background: rgba(200,160,80,0.06); color: #c8a04e;
+            font-size: 0.95rem; letter-spacing: 0.15em;
+            cursor: pointer; transition: all 0.4s;
+            font-family: inherit; border-radius: 2px;
+        }
+        .btn:hover {
+            background: rgba(200,160,80,0.15);
+            border-color: #c8a04e;
+            box-shadow: 0 0 25px rgba(200,160,80,0.2);
+            text-shadow: 0 0 10px rgba(200,160,80,0.5);
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn:disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+        .btn.primary {
+            background: rgba(200,160,80,0.12); border-color: #c8a04e88;
+            font-size: 1.1rem; padding: 0.8rem 3.5rem;
+        }
+
+        /* 历史 */
+        .history {
+            margin-top: auto; width: 100%; max-width: 400px;
+        }
+        .history h3 {
+            text-align: center; font-size: 0.65rem; color: #5a4e38;
+            letter-spacing: 0.2em; margin-bottom: 0.5rem; font-weight: normal;
+        }
+        .history-list {
+            display: flex; flex-wrap: wrap; gap: 0.35rem; justify-content: center;
+        }
+        .history-item {
+            padding: 0.3rem 0.7rem; border: 1px solid #2a2218;
+            cursor: pointer; font-size: 0.68rem; color: #7a6e58;
+            transition: all 0.3s; border-radius: 2px;
+        }
+        .history-item:hover {
+            border-color: #c8a04e55; color: #c8a04e;
+        }
+
+        /* ===== 右栏 · 卦象+解读 ===== */
+        .result-layout {
+            display: flex; gap: 2.5rem; align-items: flex-start;
+            justify-content: center; width: 100%;
+        }
+        /* 左侧卦象栈 */
+        .hex-stack {
+            display: flex; flex-direction: column; align-items: center;
+            gap: 0.6rem; flex-shrink: 0;
+        }
+        .hex-col {
+            display: flex; flex-direction: column; align-items: center;
+            gap: 0.5rem;
+        }
+        .hex-label {
+            font-size: 0.6rem; color: #5a4e38; letter-spacing: 0.2em;
+        }
+        .hexagram-name {
+            font-size: 1.2rem; color: #c8a04e; letter-spacing: 0.12em;
+            text-shadow: 0 0 18px rgba(200,160,80,0.3);
+            text-align: center; min-height: 1.5rem;
+        }
+        .hexagram-lines {
+            display: flex; flex-direction: column-reverse; gap: 0.3rem;
+            align-items: center;
+        }
+        .hex-line {
+            display: flex; align-items: center; gap: 0.5rem;
+            transition: all 0.6s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        .hex-line .line-bar {
+            height: 10px; border-radius: 5px; width: 150px;
+            background: #c8a04e;
+            box-shadow: 0 0 12px rgba(200,160,80,0.4);
+            transition: all 0.5s;
+        }
+        .hex-line .line-bar.broken {
+            background: transparent; box-shadow: none;
+            display: flex; gap: 16px; justify-content: center;
+        }
+        .hex-line .line-bar.broken::before,
+        .hex-line .line-bar.broken::after {
+            content: '';
+            width: 58px; height: 10px;
+            border-radius: 5px; background: #c8a04e;
+            box-shadow: 0 0 12px rgba(200,160,80,0.4);
+        }
+        .hex-line .line-num {
+            font-size: 0.6rem; color: #6b5e48; width: 16px; text-align: center;
+        }
+        .hex-line.changing .line-bar,
+        .hex-line.changing .line-bar.broken::before,
+        .hex-line.changing .line-bar.broken::after {
+            background: #e8734a;
+            box-shadow: 0 0 18px rgba(232,115,74,0.7);
+            animation: pulse-line 1s ease-in-out infinite;
+        }
+        @keyframes pulse-line {
+            0%,100% { box-shadow: 0 0 10px rgba(232,115,74,0.4); }
+            50% { box-shadow: 0 0 22px rgba(232,115,74,0.9); }
+        }
+
+        /* 上下卦分隔 */
+        .changed-divider {
+            display: flex; align-items: center; gap: 0.6rem;
+            width: 100%; padding: 0.2rem 0;
+        }
+        .changed-divider .line {
+            flex: 1; height: 1px;
+            background: linear-gradient(90deg, transparent, #e8734a55, transparent);
+        }
+        .changed-divider .arrow {
+            font-size: 0.85rem; color: #e8734a; white-space: nowrap;
+        }
+
+        /* 右侧解读 */
+        .interpretation {
+            text-align: left; line-height: 2;
+            max-width: 280px; min-width: 200px;
+            padding-left: 1.5rem;
+            border-left: 1px solid rgba(200,160,80,0.12);
+        }
+        .interpretation .judgment {
+            font-size: 1rem; color: #c8a04e; margin-bottom: 0.6rem;
+            text-align: center;
+        }
+        .interpretation .detail {
+            font-size: 0.72rem; color: #7a6e58;
+        }
+
+        .right-empty {
+            color: #3a3028; font-size: 0.85rem; text-align: center;
+            letter-spacing: 0.15em; line-height: 2;
+        }
+        .right-empty .icon { font-size: 4rem; opacity: 0.15; display: block; margin-bottom: 0.8rem; }
+
+        /* Toast */
+        .toast {
+            position: fixed; top: 2rem; left: 50%; transform: translateX(-50%) translateY(-120px);
+            background: #1a1410; border: 1px solid #c8a04e55;
+            color: #d4c8a8; padding: 0.6rem 1.8rem;
+            font-size: 0.85rem; z-index: 100;
+            transition: transform 0.5s cubic-bezier(0.34,1.56,0.64,1);
+            letter-spacing: 0.1em;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+        .footer {
+            position: fixed; bottom: 1rem; right: 2rem;
+            font-size: 0.6rem; color: #3a3028; letter-spacing: 0.15em;
+            z-index: 1;
+        }
+
+        /* 响应式 */
+        @media (max-width: 800px) {
+            .app { flex-direction: column; }
+            .left-panel { width: 100%; min-width: auto; border-right: none; border-bottom: 1px solid rgba(200,160,80,0.1); padding: 2rem 1.5rem; }
+            .right-panel { padding: 1.5rem; }
+            .result-layout { flex-direction: column; align-items: center; }
+            .interpretation {
+                border-left: none; border-top: 1px solid rgba(200,160,80,0.12);
+                padding-left: 0; padding-top: 1rem;
+                text-align: center; max-width: 100%;
+            }
+            .hex-line .line-bar { width: 120px; }
+            .hex-line .line-bar.broken::before,
+            .hex-line .line-bar.broken::after { width: 44px; }
+            .hexagram-name { font-size: 1rem; }
+            .coins-area { gap: 1rem; }
+            .coin { width: 50px; height: 50px; }
+            .coin::before { width: 12px; height: 12px; }
+            .coin::after { font-size: 7px; top: 5px; }
+            .turtle-shell { width: 78px; height: 56px; margin-left: -39px; margin-top: -28px; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="particles"></canvas>
+    <div class="toast" id="toast"></div>
+
+    <div class="app">
+        <!-- ===== 左栏 · 操作区 ===== -->
+        <section class="left-panel">
+            <div class="title-area">
+                <div class="icon">☯</div>
+                <h1>灵 境 卜 卦</h1>
+                <p class="sub">SPIRITS · I-CHING</p>
+            </div>
+            <div class="divider"></div>
+
+            <div class="coins-area" id="coinsArea">
+                <div class="turtle-shell" id="turtleShell" style="display:none;">
+                    <div class="shell-inner"></div>
+                </div>
+                <div class="coin result-head" id="coin1"></div>
+                <div class="coin result-head" id="coin2"></div>
+                <div class="coin result-head" id="coin3"></div>
+            </div>
+
+            <div class="toss-count">第 <span id="tossNum">1</span> / 6 摇</div>
+
+            <div class="action-area">
+                <button class="btn primary" id="btnToss">🪙 起 卦</button>
+                <button class="btn" id="btnReset" style="display:none;">⟳ 重新起卦</button>
+            </div>
+
+            <div class="history" id="history" style="display:none;">
+                <h3>📜 卜卦记录</h3>
+                <div class="history-list" id="historyList"></div>
+            </div>
+        </section>
+
+        <!-- ===== 右栏 · 卦象区 ===== -->
+        <section class="right-panel" id="rightPanel">
+            <div class="right-empty" id="rightEmpty">
+                <span class="icon">☯</span>
+                静心凝神<br>点击「起卦」<br>问卜天机
+            </div>
+            <!-- 结果：左卦象 + 右解读 -->
+            <div class="result-layout" id="resultLayout" style="display:none;">
+                <div class="hex-stack">
+                    <!-- 本卦 -->
+                    <div class="hex-col" id="mainHexCol">
+                        <span class="hex-label">本 卦</span>
+                        <div class="hexagram-name" id="hexName"></div>
+                        <div class="hexagram-lines" id="hexLines"></div>
+                    </div>
+                    <!-- 变卦分隔 -->
+                    <div class="changed-divider" id="changedDivider" style="display:none;">
+                        <span class="line"></span>
+                        <span class="arrow">⬇ 变 卦 ⬇</span>
+                        <span class="line"></span>
+                    </div>
+                    <!-- 变卦 -->
+                    <div class="hex-col" id="changedHexCol" style="display:none;">
+                        <span class="hex-label">变 卦</span>
+                        <div class="hexagram-name" id="changedName"></div>
+                        <div class="hexagram-lines" id="changedLines"></div>
+                    </div>
+                </div>
+                <!-- 解读 -->
+                <div class="interpretation" id="interpretation"></div>
+            </div>
+        </section>
+    </div>
+
+    <div class="footer">心诚则灵 · 仅供参考</div>
+
+    <script>
+    (function() {
+        // ==================== 64卦数据 ====================
+        const TRIGRAMS = {
+            '111': { name: '乾', element: '天' },
+            '110': { name: '兑', element: '泽' },
+            '101': { name: '离', element: '火' },
+            '100': { name: '震', element: '雷' },
+            '011': { name: '巽', element: '风' },
+            '010': { name: '坎', element: '水' },
+            '001': { name: '艮', element: '山' },
+            '000': { name: '坤', element: '地' }
+        };
+
+        function buildHexagrams() {
+            const keys = ['111','110','101','100','011','010','001','000'];
+            const data = {};
+            const judgments = {
+                '111111':{name:'乾为天',judgment:'元亨利贞',detail:'大吉之卦。龙行九天，万物创始。宜奋发进取，自强不息。'},
+                '111110':{name:'天泽履',judgment:'履虎尾，不咥人，亨',detail:'如履薄冰，谨慎行事则安。宜循规蹈矩，量力而行。'},
+                '111101':{name:'天火同人',judgment:'同人于野，亨',detail:'志同道合，众心成城。宜结盟合作，光明磊落。'},
+                '111100':{name:'天雷无妄',judgment:'元亨利贞，其匪正有眚',detail:'真实无妄，顺天应时。宜守正道而行，不可有非分之想。'},
+                '111011':{name:'天风姤',judgment:'女壮，勿用取女',detail:'机缘邂逅，一阴始生。宜珍视良缘，但不可冒进。'},
+                '111010':{name:'天水讼',judgment:'有孚窒惕，中吉终凶',detail:'争讼不宁，宜退不宜进。凡事以和为贵，退一步海阔天空。'},
+                '111001':{name:'天山遁',judgment:'遁亨，小利贞',detail:'退避隐忍，以退为进。宜韬光养晦，明哲保身。'},
+                '111000':{name:'天地否',judgment:'否之匪人，不利君子贞',detail:'天地不交，闭塞不通。宜安守本分，静待时机。'},
+                '110111':{name:'泽天夬',judgment:'扬于王庭，孚号有厉',detail:'决断之时，当机立断。宜消除隐患，果断行动。'},
+                '110110':{name:'兑为泽',judgment:'兑亨利贞',detail:'和悦相处，万事亨通。宜以柔克刚，用喜悦之心待人。'},
+                '110101':{name:'泽火革',judgment:'己日乃孚，元亨利贞',detail:'改革之时，除旧布新。宜顺应时势而变，不可固守旧制。'},
+                '110100':{name:'泽雷随',judgment:'元亨利贞，无咎',detail:'随顺时势，择善而从。宜灵活应变，不固执己见。'},
+                '110011':{name:'泽风大过',judgment:'栋桡，利有攸往，亨',detail:'承重过度，大梁弯曲。宜以柔补刚，寻求平衡。'},
+                '110010':{name:'泽水困',judgment:'困亨贞，大人吉',detail:'困顿艰难，守正待时。穷则变，变则通，困境终将过去。'},
+                '110001':{name:'泽山咸',judgment:'咸亨利贞，取女吉',detail:'感应相通，心灵契合。宜以诚相待，感情自然流动。'},
+                '110000':{name:'泽地萃',judgment:'萃亨，王假有庙',detail:'荟萃聚集，英才毕至。宜团结协作，众志成城。'},
+                '101111':{name:'火天大有',judgment:'元亨',detail:'丰盛富有，大获所有。宜感恩惜福，慷慨分享。大吉大利。'},
+                '101110':{name:'火泽睽',judgment:'小事吉',detail:'背道而驰，貌合神离。宜求同存异，小事可为。'},
+                '101101':{name:'离为火',judgment:'利贞亨，畜牝牛吉',detail:'附丽光明，柔顺中正。宜依附正道，谦逊行事。'},
+                '101100':{name:'火雷噬嗑',judgment:'噬嗑亨，利用狱',detail:'咀嚼硬物，清除障碍。宜果断处理难题，明辨是非。'},
+                '101011':{name:'火风鼎',judgment:'元吉亨',detail:'鼎立天下，稳固基业。宜建立秩序，革故鼎新。大吉。'},
+                '101010':{name:'火水未济',judgment:'亨，小狐汔济，濡其尾',detail:'事未完成，功败垂成。宜谨慎收尾，不可功亏一篑。'},
+                '101001':{name:'火山旅',judgment:'旅贞吉',detail:'行旅在外，客居他乡。宜顺应环境，保持柔顺。'},
+                '101000':{name:'火地晋',judgment:'康侯用锡马蕃庶',detail:'旭日东升，蒸蒸日上。宜积极进取，自我提升。'},
+                '100111':{name:'雷天大壮',judgment:'利贞',detail:'强盛壮大，四阳并进。宜守正而行，不可恃强凌弱。'},
+                '100110':{name:'雷泽归妹',judgment:'征凶，无攸利',detail:'少女归嫁，顺应自然。宜接纳现实，随缘而行。'},
+                '100101':{name:'雷火丰',judgment:'丰亨，王假之',detail:'丰盛盈满，如日中天。宜珍惜当下，未雨绸缪。盛极必衰。'},
+                '100100':{name:'震为雷',judgment:'震亨，笑言哑哑',detail:'春雷乍响，惊动万物。宜临危不乱，处变不惊。'},
+                '100011':{name:'雷风恒',judgment:'恒亨，无咎，利贞',detail:'恒久之道，持之有恒。宜坚守本心，勿轻易改变。'},
+                '100010':{name:'雷水解',judgment:'解利西南，无所往',detail:'困难解除，如释重负。冬去春来，万象更新。'},
+                '100001':{name:'雷山小过',judgment:'小过亨利贞',detail:'小有过越，宜下不宜上。小事可成，大事勿为。'},
+                '100000':{name:'雷地豫',judgment:'豫利建侯行师',detail:'愉悦安乐，顺时而动。宜积极行动，建立功业。'},
+                '011111':{name:'风天小畜',judgment:'小畜亨，密云不雨',detail:'小有积蓄，厚积薄发。宜耐心积累，不可急于求成。'},
+                '011110':{name:'风泽中孚',judgment:'中孚豚鱼吉',detail:'诚信感物，信及豚鱼。宜以真诚待人，坦诚相见。'},
+                '011101':{name:'风火家人',judgment:'家人利女贞',detail:'家和万事兴。宜修身齐家，以柔顺治家。'},
+                '011100':{name:'风雷益',judgment:'益利有攸往，利涉大川',detail:'增益之象，锦上添花。宜见善则迁，有过则改。'},
+                '011011':{name:'巽为风',judgment:'巽小亨，利有攸往',detail:'风行草偃，柔顺入微。宜顺势而为，以柔克刚。'},
+                '011010':{name:'风水涣',judgment:'涣亨，王假有庙',detail:'涣散分离，重新凝聚。宜化解矛盾，促进和谐。'},
+                '011001':{name:'风山渐',judgment:'渐女归吉，利贞',detail:'循序渐进，不可冒进。宜稳扎稳打，徐徐图之。'},
+                '011000':{name:'风地观',judgment:'观盥而不荐，有孚颙若',detail:'观察入微，省视自身。宜多听多看，反思自省。'},
+                '010111':{name:'水天需',judgment:'需有孚，光亨贞吉',detail:'等待时机，有信则吉。宜耐心守候，心怀诚信。'},
+                '010110':{name:'水泽节',judgment:'节亨，苦节不可贞',detail:'节制有度，过犹不及。宜把握分寸，不苛求不纵容。'},
+                '010101':{name:'水火既济',judgment:'既济亨小，利贞',detail:'事已成就，功德圆满。宜居安思危，慎终如始。'},
+                '010100':{name:'水雷屯',judgment:'屯元亨利贞，勿用有攸往',detail:'初生艰难，万事开头难。宜扎根固本，不宜远行。'},
+                '010011':{name:'水风井',judgment:'井改邑不改井',detail:'井养不穷，取之不竭。宜修缮自身，服务他人。'},
+                '010010':{name:'坎为水',judgment:'习坎有孚，维心亨',detail:'重重险阻，水势汹涌。宜保持诚信之心，坚守正道。'},
+                '010001':{name:'水山蹇',judgment:'蹇利西南，不利东北',detail:'前行艰难，举步维艰。宜选择有利方向，避开强敌。'},
+                '010000':{name:'水地比',judgment:'比吉，原筮元永贞',detail:'亲比辅助，团结一致。宜结盟互助，紧跟贤者。'},
+                '001111':{name:'山天大畜',judgment:'大畜利贞，不家食吉',detail:'大积蓄力，学以致用。宜厚积薄发，积蓄到则大展宏图。'},
+                '001110':{name:'山泽损',judgment:'损有孚，元吉无咎',detail:'减损之道，损下益上。宜克制私欲，减省用度。'},
+                '001101':{name:'山火贲',judgment:'贲亨，小利有攸往',detail:'装饰文饰，以美化质。宜注重外表与礼仪。'},
+                '001100':{name:'山雷颐',judgment:'颐贞吉，观颐自求口实',detail:'颐养之道，养身养德。宜慎言语，节饮食。'},
+                '001011':{name:'山风蛊',judgment:'蛊元亨，利涉大川',detail:'整治腐败，拨乱反正。宜革除积弊，振疲起衰。'},
+                '001010':{name:'山水蒙',judgment:'蒙亨，匪我求童蒙',detail:'启蒙发智，教育引导。宜虚心求教，主动学习。'},
+                '001001':{name:'艮为山',judgment:'艮其背，不获其身',detail:'停止安住，知止不殆。宜适可而止，安守本分。'},
+                '001000':{name:'山地剥',judgment:'剥不利有攸往',detail:'剥落侵蚀，阴盛阳衰。宜退守自保，不宜妄动。'},
+                '000111':{name:'地天泰',judgment:'泰小往大来，吉亨',detail:'天地交泰，万物亨通。大吉大利之象。'},
+                '000110':{name:'地泽临',judgment:'临元亨利贞',detail:'居高临下，督导视察。宜亲临一线，用心关注。'},
+                '000101':{name:'地火明夷',judgment:'明夷利艰贞',detail:'光明受损，君子蒙难。宜隐忍内敛，守正不移。'},
+                '000100':{name:'地雷复',judgment:'复亨，出入无疾',detail:'一阳来复，万象更新。新的循环即将开始。'},
+                '000011':{name:'地风升',judgment:'升元亨，用见大人',detail:'上升渐进，志在高远。宜脚踏实地，步步高升。'},
+                '000010':{name:'地水师',judgment:'师贞，丈人吉',detail:'行师用众，以正为本。宜师出有名，纪律严明。'},
+                '000001':{name:'地山谦',judgment:'谦亨，君子有终',detail:'谦逊处世，满招损谦受益。宜保持谦虚，不居功自傲。'},
+                '000000':{name:'坤为地',judgment:'元亨利牝马之贞',detail:'柔顺承载，厚德载物。宜以柔制刚，顺势而为。'}
+            };
+            for (const uk of keys) {
+                for (const lk of keys) {
+                    const hk = uk + lk;
+                    data[hk] = judgments[hk] || { name: TRIGRAMS[uk].name+'为'+TRIGRAMS[lk].name, judgment: '吉凶参半', detail: '宜静观其变，审时度势而行。' };
+                }
+            }
+            return data;
+        }
+        const HEXAGRAMS = buildHexagrams();
+
+        // ==================== 状态 ====================
+        let tossLines = [];
+        let history = [];
+        let isTossing = false;
+
+        // DOM
+        const coin1 = document.getElementById('coin1'), coin2 = document.getElementById('coin2'), coin3 = document.getElementById('coin3');
+        const tossNum = document.getElementById('tossNum');
+        const hexName = document.getElementById('hexName'), hexLines = document.getElementById('hexLines');
+        const changedName = document.getElementById('changedName'), changedLines = document.getElementById('changedLines');
+        const changedDivider = document.getElementById('changedDivider'), changedHexCol = document.getElementById('changedHexCol');
+        const interpretation = document.getElementById('interpretation');
+        const btnToss = document.getElementById('btnToss'), btnReset = document.getElementById('btnReset');
+        const historyDiv = document.getElementById('history'), historyList = document.getElementById('historyList');
+        const rightEmpty = document.getElementById('rightEmpty'), resultLayout = document.getElementById('resultLayout');
+        const toast = document.getElementById('toast');
+
+        let toastTimer;
+        function showToast(msg) {
+            clearTimeout(toastTimer);
+            toast.textContent = msg;
+            toast.classList.add('show');
+            toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        // ==================== 粒子背景 ====================
+        function initParticles() {
+            const canvas = document.getElementById('particles');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const particles = [];
+            for (let i = 0; i < 50; i++) {
+                particles.push({
+                    x: Math.random()*canvas.width, y: Math.random()*canvas.height,
+                    r: Math.random()*1.5+0.3,
+                    vx: (Math.random()-0.5)*0.25, vy: (Math.random()-0.5)*0.25,
+                    alpha: Math.random()*0.5+0.1
+                });
+            }
+            function animate() {
+                ctx.clearRect(0,0,canvas.width,canvas.height);
+                for (const p of particles) {
+                    p.x += p.vx; p.y += p.vy;
+                    if (p.x<0) p.x=canvas.width; if (p.x>canvas.width) p.x=0;
+                    if (p.y<0) p.y=canvas.height; if (p.y>canvas.height) p.y=0;
+                    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+                    ctx.fillStyle = `rgba(200,160,80,${p.alpha})`; ctx.fill();
+                }
+                requestAnimationFrame(animate);
+            }
+            animate();
+            window.addEventListener('resize', () => { canvas.width=innerWidth; canvas.height=innerHeight; });
+        }
+
+        // ==================== 投掷铜钱 ====================
+        function randomPositions() {
+            const area = document.getElementById('coinsArea');
+            const aw = area.clientWidth, ah = area.clientHeight;
+            const positions = [];
+            const size = coin1.getBoundingClientRect().width;
+            const margin = Math.max(6, size * 0.15);
+            for (let i = 0; i < 3; i++) {
+                let x, y, tries = 0;
+                do {
+                    x = margin + Math.random() * (aw - size - margin * 2);
+                    y = margin + Math.random() * (ah - size - margin * 2);
+                    tries++;
+                } while (tries < 20 && positions.some(p =>
+                    Math.hypot(p.x - x, p.y - y) < size * 0.7
+                ));
+                positions.push({ x, y });
+            }
+            return positions;
+        }
+
+        function applyPositions(positions) {
+            [coin1, coin2, coin3].forEach((c, i) => {
+                c.style.left = positions[i].x + 'px';
+                c.style.top  = positions[i].y + 'px';
+            });
+        }
+
+        function getCoinPositions() {
+            const area = document.getElementById('coinsArea');
+            const ar = area.getBoundingClientRect();
+            return [coin1, coin2, coin3].map(c => {
+                const r = c.getBoundingClientRect();
+                return { x: r.left - ar.left, y: r.top - ar.top };
+            });
+        }
+
+        // 单枚铜钱物理动画：抛起 → 飘散 → 下落 → 弹跳
+        function animateCoinToss(coin, sx, sy, ex, ey, result, delay) {
+            return new Promise(resolve => {
+                const duration = 780 + Math.random() * 120;
+                const peakY = Math.min(sy, ey) - 55 - Math.random() * 70;
+                const midX  = sx + (ex - sx) * 0.2 + (Math.random() - 0.5) * 55;
+                const bounceH = 6 + Math.random() * 14;
+                const spinY  = 360 + Math.random() * 720;
+                coin.classList.add('animating');
+
+                function start(origin) {
+                    function step(now) {
+                        const el = now - origin;
+                        if (el < 0) { requestAnimationFrame(step); return; }
+                        const t = Math.min(el / duration, 1);
+                        let x, y, rx, ry, sc, zi;
+
+                        if (t < 0.18) {
+                            // 🚀 向上抛起 — 加速上升
+                            const p = t / 0.18;
+                            const e = 1 - (1-p)*(1-p)*(1-p);
+                            x = sx + (midX - sx) * e;
+                            y = sy + (peakY - sy) * e;
+                            rx = 15 + 55 * e;
+                            ry = spinY * 0.2 * e;
+                            sc = 1 + 0.07 * e;
+                            zi = 3;
+                        } else if (t < 0.40) {
+                            // ☁️ 顶点飘浮 — 轻微横向漂移
+                            const p = (t - 0.18) / 0.22;
+                            const wob = Math.sin(p * Math.PI * 2.5) * 8 * (1-p);
+                            x = midX + wob;
+                            y = peakY + p * 20;
+                            rx = 70 - 20 * p;
+                            ry = spinY * (0.2 + 0.3 * p);
+                            zi = 2 + Math.round(p);
+                        } else if (t < 0.76) {
+                            // 🌊 重力下落 — 加速砸向目标
+                            const p = (t - 0.40) / 0.36;
+                            const e = p < 0.5 ? 2*p*p : 1 - Math.pow(-2*p+2, 2)/2;
+                            x = midX + (ex - midX) * e;
+                            y = peakY + 20 + (ey - peakY - 20) * e;
+                            rx = 50 - 35 * e;
+                            ry = spinY * (0.5 + 0.5 * e);
+                            sc = 1.07 - 0.11 * e;
+                            zi = 2;
+                        } else {
+                            // 🎯 落地弹跳 — 逐渐衰减
+                            const p = (t - 0.76) / 0.24;
+                            const damp = Math.exp(-p * 6);
+                            const bounce = Math.abs(Math.cos(p * Math.PI * 4.5)) * bounceH * damp;
+                            x = ex;
+                            y = ey - bounce;
+                            rx = 15 + bounce * 0.25;
+                            ry = spinY + (Math.random()-0.5) * 10 * p;
+                            sc = 1 - bounce * 0.0015;
+                            zi = 1;
+                        }
+
+                        coin.style.left  = x + 'px';
+                        coin.style.top   = y + 'px';
+                        coin.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg) scale(${sc})`;
+                        coin.style.zIndex = String(zi);
+
+                        if (t < 1) {
+                            requestAnimationFrame(step);
+                        } else {
+                            coin.style.left  = ex + 'px';
+                            coin.style.top   = ey + 'px';
+                            coin.style.transform = '';
+                            coin.style.zIndex = '';
+                            coin.classList.remove('animating');
+                            coin.className = 'coin ' + (result === 3 ? 'result-head' : 'result-tail');
+                            resolve();
+                        }
+                    }
+                    requestAnimationFrame(step);
+                }
+                setTimeout(() => start(performance.now()), delay);
+            });
+        }
+
+        function tossCoins() {
+            return new Promise(async resolve => {
+                const shell = document.getElementById('turtleShell');
+                const positions = randomPositions();
+                const coins = [coin1, coin2, coin3];
+                const results = [];
+                for (let i = 0; i < 3; i++) results.push(Math.random() < 0.5 ? 3 : 2);
+
+                // 🐢 1. 铜钱隐入龟壳
+                coins.forEach(c => { c.style.opacity = '0'; c.style.transform = ''; });
+                shell.style.display = '';
+                shell.style.opacity = '1';
+                shell.classList.remove('shaking', 'opening');
+                shell.style.transform = '';
+                await sleep(280);
+
+                // 🎲 2. 摇动龟壳
+                shell.classList.add('shaking');
+                await sleep(950);
+                shell.classList.remove('shaking');
+
+                // 3. 龟壳开启 + 铜钱从中爆出
+                shell.classList.add('opening');
+                const sr = shell.getBoundingClientRect();
+                const ar = document.getElementById('coinsArea').getBoundingClientRect();
+                const halfW = coin1.getBoundingClientRect().width / 2;
+                const ox = sr.left - ar.left + sr.width / 2 - halfW;
+                const oy = sr.top - ar.top + sr.height / 2 - halfW + 8;
+
+                coins.forEach(c => {
+                    c.style.left  = ox + 'px';
+                    c.style.top   = oy + 'px';
+                    c.style.opacity = '1';
+                    c.className = 'coin';
+                });
+
+                shell.style.opacity = '0';
+                await sleep(250);
+                shell.style.display = 'none';
+                shell.classList.remove('opening');
+
+                // ☄️ 4. 铜钱从壳心四散到随机位置
+                await Promise.all(coins.map((coin, i) =>
+                    animateCoinToss(coin, ox, oy, positions[i].x, positions[i].y, results[i], i * 55)
+                ));
+
+                resolve({ results, sum: results[0] + results[1] + results[2] });
+            });
+        }
+
+        function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+        function lineFromSum(sum) {
+            if (sum===6) return { value:6, isYang:false, isChanging:true };
+            if (sum===7) return { value:7, isYang:true,  isChanging:false };
+            if (sum===8) return { value:8, isYang:false, isChanging:false };
+            if (sum===9) return { value:9, isYang:true,  isChanging:true };
+        }
+
+        function buildHexKey(lines) { return lines.map(l=>l.isYang?'1':'0').join(''); }
+
+        function displayHexagram(lines, container, nameEl) {
+            container.innerHTML = '';
+            const info = HEXAGRAMS[buildHexKey(lines)] || { name:'未知卦' };
+            if (nameEl) nameEl.textContent = info.name;
+            for (let i=5;i>=0;i--) {
+                const line = lines[i];
+                const div = document.createElement('div');
+                div.className = 'hex-line';
+                if (line.isChanging) div.classList.add('changing');
+                const num = document.createElement('span');
+                num.className = 'line-num';
+                num.textContent = ['初','二','三','四','五','上'][i];
+                div.appendChild(num);
+                const bar = document.createElement('div');
+                bar.className = 'line-bar';
+                if (!line.isYang) bar.classList.add('broken');
+                div.appendChild(bar);
+                container.appendChild(div);
+            }
+            return info;
+        }
+
+        function renderFullHexagram() {
+            if (tossLines.length===0) return;
+            rightEmpty.style.display = 'none';
+            resultLayout.style.display = '';
+
+            const info = displayHexagram(tossLines, hexLines, hexName);
+            interpretation.innerHTML = `<div class="judgment">判词：${info.judgment}</div><div class="detail">${info.detail}</div>`;
+
+            const hasChanging = tossLines.some(l=>l.isChanging);
+            changedDivider.style.display = hasChanging ? '' : 'none';
+            changedHexCol.style.display = hasChanging ? '' : 'none';
+            if (hasChanging) {
+                const changed = tossLines.map(l=>l.isChanging?{...l,isYang:!l.isYang,isChanging:false}:{...l});
+                displayHexagram(changed, changedLines, changedName);
+            }
+        }
+
+        // ==================== 摇卦流程 ====================
+        async function startDivination() {
+            if (isTossing) return;
+            isTossing = true;
+            tossLines = [];
+            hexLines.innerHTML = ''; hexName.textContent = '';
+            changedLines.innerHTML = ''; changedName.textContent = '';
+            changedDivider.style.display = 'none'; changedHexCol.style.display = 'none';
+            interpretation.innerHTML = '';
+            rightEmpty.style.display = ''; resultLayout.style.display = 'none';
+            historyDiv.style.display = 'none';
+            btnReset.style.display = 'none';
+            btnToss.textContent = '🪙 摇卦中...'; btnToss.disabled = true;
+
+            for (let i=0;i<6;i++) {
+                tossNum.textContent = i+1;
+                const { sum } = await tossCoins();
+                const line = lineFromSum(sum);
+                tossLines.push(line);
+                const temp = [...tossLines];
+                while (temp.length<6) temp.push({isYang:true,isChanging:false});
+                displayHexagram(temp, hexLines, hexName);
+                await new Promise(r=>setTimeout(r,600));
+            }
+
+            tossNum.textContent = '6';
+            btnToss.textContent = '🪙 起 卦'; btnToss.disabled = false;
+            btnReset.style.display = '';
+            isTossing = false;
+            renderFullHexagram();
+
+            const info = HEXAGRAMS[buildHexKey(tossLines)] || { name:'未知卦' };
+            history.unshift({ name:info.name, lines:[...tossLines], time:new Date().toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) });
+            if (history.length>20) history.pop();
+            renderHistory();
+            showToast('卦成 — '+info.name);
+        }
+
+        function resetDivination() {
+            tossLines=[]; tossNum.textContent='1';
+            hexLines.innerHTML=''; hexName.textContent='';
+            changedLines.innerHTML=''; changedName.textContent='';
+            changedDivider.style.display='none'; changedHexCol.style.display='none';
+            interpretation.innerHTML='';
+            rightEmpty.style.display=''; resultLayout.style.display='none';
+            btnReset.style.display='none';
+            const shell = document.getElementById('turtleShell');
+            shell.style.display = 'none';
+            shell.classList.remove('shaking', 'opening');
+            shell.style.opacity = '0';
+            [coin1,coin2,coin3].forEach(c => {
+                c.className = 'coin result-head';
+                c.style.opacity = '1';
+                c.style.transform = '';
+            });
+            applyPositions(randomPositions());
+        }
+
+        function renderHistory() {
+            if (history.length===0){historyDiv.style.display='none';return;}
+            historyDiv.style.display='';
+            historyList.innerHTML=history.map((h,i)=>`<div class="history-item" data-index="${i}">${h.name} · ${h.time}</div>`).join('');
+            historyList.querySelectorAll('.history-item').forEach(el=>{el.addEventListener('click',()=>{const i=parseInt(el.dataset.index);tossLines=[...history[i].lines];renderFullHexagram();btnReset.style.display='';showToast('回看：'+history[i].name);});});
+        }
+
+        btnToss.addEventListener('click', startDivination);
+        btnReset.addEventListener('click', resetDivination);
+        document.addEventListener('keydown', e => { if (e.key===' '&&!isTossing){e.preventDefault();startDivination();} });
+        initParticles();
+    })();
+    </script>
+</body>
+</html>
